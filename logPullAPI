@@ -1,0 +1,132 @@
+#!/usr/bin/python
+# Program to pull logs from firewall via API.
+# First task allows for traffic pulls.
+# Next add-on will allow for user to specify what type of log they want.
+# Usage: logPullAPI.py [-h] [-f FIREWALL] [-u USERNAME] [-p PASSWORD]
+#   or run "./logPullAPI.py" from the command line and answer the prompts or any
+#   combination of the two.
+#
+# Note: If the password has a special character in it, it may need to be
+# delimited with "\" when typing in
+#
+import ssl
+import string
+import getpass
+import subprocess
+import argparse
+import urllib
+import urllib2
+from xml.dom import minidom
+
+
+# Handler for the command line arguments, if used.
+parser = argparse.ArgumentParser()
+parser.add_argument("-f", "--firewall", help="Name or IP address of the firewall")
+parser.add_argument("-u", "--username", help="User login")
+parser.add_argument("-p", "--password", help="Login password")
+parser.add_argument("-l", "--logtype", help="Specify the log-type to capture. Options are: traffic\nthreat\nconfig\nsystem\nwildfire\nurl\ndata")
+parser.add_argument("-a", "--logAmount", help="Specify the amount of logs to pull, 21-5000(max supported)")
+args = parser.parse_args()
+
+# Gather the user defined variables, either from the command-line options,
+# or if they are not provided, from a user prompt
+if args.firewall:
+    firewall = args.firewall
+else:
+    firewall = raw_input("Enter the name or IP of the firewall: ")
+if args.username:
+    user = args.username
+else:
+    user = raw_input("Enter the user login: ")
+
+if args.logtype:
+    logtype = args.logtype
+else:
+    logtype = raw_input("Specify the log-type to capture. Options are:\n traffic\nthreat\nconfig\nsystem\nwildfire\nurl\ndata:\n ")
+
+if args.logAmount:
+    logAmount = args.logAmount
+else:
+    logAmount = raw_input("Specify the amount of logs to pull, 21-5000(max supported). The default is 20 logs: ")
+
+if args.password:
+    pw = args.password
+else:
+    pw = getpass.getpass()
+
+############################################################################
+# Ignore everything above this line
+############################################################################
+
+
+############################################################################
+# Understand what the two functions below do but do not modify.
+############################################################################
+
+def send_api_request(url, values):
+# Function to send the api request to the firewall and return the
+# parsed response.
+
+    context = ssl._create_unverified_context()
+    data = urllib.urlencode(values)
+    request = urllib2.Request(url, data)
+    response = urllib2.urlopen(request, context=context).read()
+
+    print response
+
+    return minidom.parseString(response)
+
+
+def get_api_key(hostname, username, password):
+# Function to generate a key using the user defined login credentials
+    url = 'https://' + hostname + '/api'
+    values = {'type': 'keygen', 'user': username, 'password': password}
+    parsedKey = send_api_request(url, values)
+    nodes = parsedKey.getElementsByTagName('key')
+    key = nodes[0].firstChild.nodeValue
+    return key
+
+
+############################################################################
+# All modifications will be made below this line.
+############################################################################
+
+def main():
+
+
+    key = get_api_key(firewall, user, pw)
+    url = 'https://' + firewall + '/api'
+    #returnedLogs = retrieveLogs(firewall, logtype)
+
+    print key
+    #print url
+    return key
+
+
+
+#def retrieveLogs(firewall, logtype):
+def retrieveLogs():
+
+    key = get_api_key(firewall, user, pw)
+
+    url = 'https://' + firewall + '/api'
+    values = {'type': 'log', 'log-type': logtype, 'key': key, 'nlogs': logAmount}
+    #response = send_api_request(url, values)
+    jobCreated = send_api_request(url, values)
+    #allDom = jobCreated.response
+    jobNumber = jobCreated.getElementsByTagName('job')
+    job = jobNumber[0].firstChild.nodeValue
+    print jobCreated
+    print job
+
+
+    newURL  = 'https://' + firewall + '/api'
+    newValues = {'type': 'log', 'log-type': logtype, 'action': 'get', 'job-id': job, 'key': key}
+    retrieveJob = send_api_request(newURL, newValues)
+    print retrieveJob
+
+
+retrieveLogs()
+
+
+main()
