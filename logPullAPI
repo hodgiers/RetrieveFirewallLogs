@@ -60,7 +60,7 @@ else:
 
 
 ############################################################################
-# Understand what the two functions below do but do not modify.
+#Primary Code for Generating API Key and Sending API Requests
 ############################################################################
 
 def send_api_request(url, values):
@@ -88,7 +88,7 @@ def get_api_key(hostname, username, password):
 
 
 ############################################################################
-# All modifications will be made below this line.
+# Code for Retrieving Logs
 ############################################################################
 
 def main():
@@ -96,24 +96,19 @@ def main():
 
     key = get_api_key(firewall, user, pw)
     url = 'https://' + firewall + '/api'
-    #returnedLogs = retrieveLogs(firewall, logtype)
 
     print key
     #print url
     return key
 
 
-
-#def retrieveLogs(firewall, logtype):
 def retrieveLogs():
 
     key = get_api_key(firewall, user, pw)
 
     url = 'https://' + firewall + '/api'
     values = {'type': 'log', 'log-type': logtype, 'key': key, 'nlogs': logAmount}
-    #response = send_api_request(url, values)
     jobCreated = send_api_request(url, values)
-    #allDom = jobCreated.response
     jobNumber = jobCreated.getElementsByTagName('job')
     job = jobNumber[0].firstChild.nodeValue
     print jobCreated
@@ -124,7 +119,6 @@ def retrieveLogs():
     newValues = {'type': 'log', 'log-type': logtype, 'action': 'get', 'job-id': job, 'key': key}
     retrieveJob = send_api_request(newURL, newValues)
     print retrieveJob
-
 
 retrieveLogs()
 
